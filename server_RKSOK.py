@@ -53,6 +53,5 @@ while True:
         client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
         client_socket.close()
 
-print(phone_number)
 
     
