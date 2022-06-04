@@ -1,4 +1,5 @@
 import socket
+import json
 
 
 SERVER_ADDRESS = ('localhost', 8000)
@@ -6,7 +7,6 @@ SPECIAL_ORGANS_SERVER_ADDRESS = ('vragi-vezde.to.digital', 51624)
 ENCODING = 'UTF-8'
 METHODS = ['WRITE', 'GET', 'DELETE']
 PROTOCOL_RKSOK = 'RKSOK/1.0'
-phonebook_DB = {}
 
 
 def get_message(socket_to_connect):
@@ -59,18 +59,25 @@ def process_special_organs_response(message, name, method, phone):
     no_such_name_template = 'НИНАШОЛ РКСОК/1.0'
     negative_template = 'НИЛЬЗЯ РКСОК/1.0'
 
+    with open('phonebook_DB.json', 'r') as f:
+        phonebook_DB = json.load(f)
+
     if permission == 'МОЖНА':
         if method == 'WRITE':
             phonebook_DB[name] = phone
             answer = positive_template + '\r\n' + phone
         elif method == 'GET':
-            answer = positive_template + '\r\n' + phonebook_DB[name]  if phonebook_DB.get[name] else no_such_name_template 
+            answer = positive_template + '\r\n' + phonebook_DB[name]  if name in phonebook_DB else no_such_name_template 
         elif method == 'DELETE':
-            answer = positive_template if phonebook_DB.pop[name, None] else no_such_name_template
+            answer = positive_template if name in phonebook_DB else no_such_name_template
+            del phonebook_DB[name]
     
     elif permission == 'НИЛЬЗЯ':
         answer = negative_template + comment
 
+    with open('phonebook_DB.json', 'w') as f:    
+        json.dump(phonebook_DB, f)
+       
     return answer + '\r\n\r\n'
 
 
