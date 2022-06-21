@@ -58,7 +58,6 @@ def connect_special_organs(message):
     else:
         request = "АМОЖНА? РКСОК/1.0\r\nУДОЛИ Иван Хмурый РКСОК/1.0\r\n89012345678\r\n\r\n"
 
-    print(request)
     special_organs_socket.sendall(request.encode(ENCODING))
     response = get_message(special_organs_socket)
     return response
@@ -102,46 +101,44 @@ server.listen()
 
 while True:
     logger.info('Waiting for connection')
-    print('Waiting for a connection......')
 
     client_socket, addr = server.accept()
-    print('Connected to:', addr)
+    logger.debug(f'Connected to: {addr}')
     client_socket.settimeout(30.0)
     
     try:
-        print('Trying to receive a request........')
+        logger.debug('Trying to receive a request')
         client_message = get_message(client_socket)
         if not client_message:
-            print('Client has closed a connecction............')
+            logger.info('User disconnected')
             continue
-        print('Message successfully received\nMessage:', client_message)
+        logger.info(f'Message successfully received\nMessage: {client_message}')
     except TimeoutError:
+        logger.exception('Timeout error occured')
         client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
         client_socket.close()
-        print('Failed to receive a message')
         continue
     
 
     try:
-        print('Trying to parse the request..................')
+        logger.debug('Trying to parse request')
         method, protocol, name, phone_number = get_data_from_request(client_message)
-        print(f'Request is correct.........\nGot the data.\nname: {name}\nphone number: {phone_number}\nmethod, protocol: {method, protocol}')
+        logger.info(f'Request is correct.........\nGot the data.\nname: {name}\nphone number: {phone_number}\nmethod, protocol: {method, protocol}')
     except MessageParsingError:
-        print('Wrong request, closing connection........')
+        logger.exception('Could not parse request')
         client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
         client_socket.close()
         continue
 
-    print('Connecting to the special organs server................')
     try:
+        logger.debug('Connecting to the special organs server')
         special_organs_response = connect_special_organs(client_message)
-        print("Special organs response is:", special_organs_response)
+        logger.debug(f"Special organs response is: {special_organs_response}")
     except TimeoutError:
-        print("Special organs server couldn't process your request")
+        logger.exception("Special organs server couldn't process your request")
     
     client_response = process_special_organs_response(special_organs_response, name, method, phone_number)
-    print('Sending a response......\r\n', client_response)
+    logger.debug(f'Sending a response......\r\n{client_response}')
     client_socket.sendall(client_response.encode(ENCODING))
     client_socket.close()
-    logger.info('Client has been served')
-    print('Connection has been successfully closed!\n' + '-' * 50 + '\r\n')
+    logger.info('Connection has been successfully closed!\n' + '-' * 100 + '\r\n')
