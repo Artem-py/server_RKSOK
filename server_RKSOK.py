@@ -1,6 +1,14 @@
 import socket
 import json
 
+import logging
+import logging.config
+from log_settings import logger_config
+
+
+logging.config.dictConfig(logger_config)
+logger = logging.getLogger('rksok_logger')
+
 
 SERVER_ADDRESS = ('localhost', 8000)
 SPECIAL_ORGANS_SERVER_ADDRESS = ('vragi-vezde.to.digital', 51624)
@@ -9,10 +17,17 @@ METHODS = ['WRITE', 'GET', 'DELETE']
 PROTOCOL_RKSOK = 'RKSOK/1.0'
 
 
-def get_message(socket_to_connect):
+class MessageParsingError(Exception):
+    pass
+
+
+def get_message(connection):
     message = ''
     while True:
-        chunk = socket_to_connect.recv(128)
+        chunk = connection.recv(128)
+        if not chunk:
+            connection.close()
+            return None
         message += chunk.decode(ENCODING)
         if message.endswith('\r\n\r\n'):
             break
@@ -26,11 +41,10 @@ def get_data_from_request(request_message):
     protocol = head_line[-1]
     name = ' '.join(head_line[1:-1])
     phone_number = '\r\n'.join(split_message[1:])
-    return method, protocol, name, phone_number
 
-
-def is_request_correct(method, protocol, name):
-    return method in METHODS and len(name) <= 30 and protocol == PROTOCOL_RKSOK
+    if method in METHODS and len(name) <= 30 and protocol == PROTOCOL_RKSOK:
+        return method, protocol, name, phone_number
+    else: raise MessageParsingError
 
 
 def connect_special_organs(message):
@@ -87,6 +101,7 @@ server.bind(SERVER_ADDRESS)
 server.listen()
 
 while True:
+    logger.info('Waiting for connection')
     print('Waiting for a connection......')
 
     client_socket, addr = server.accept()
@@ -96,6 +111,9 @@ while True:
     try:
         print('Trying to receive a request........')
         client_message = get_message(client_socket)
+        if not client_message:
+            print('Client has closed a connecction............')
+            continue
         print('Message successfully received\nMessage:', client_message)
     except TimeoutError:
         client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
@@ -107,11 +125,8 @@ while True:
     try:
         print('Trying to parse the request..................')
         method, protocol, name, phone_number = get_data_from_request(client_message)
-        print(f'Got the data.\nname: {name}\nphone number: {phone_number}\nmethod, protocol: {method, protocol}')
-        if not is_request_correct(method, protocol, name):
-            raise Exception
-        print('Request is correct.........')
-    except Exception:
+        print(f'Request is correct.........\nGot the data.\nname: {name}\nphone number: {phone_number}\nmethod, protocol: {method, protocol}')
+    except MessageParsingError:
         print('Wrong request, closing connection........')
         client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
         client_socket.close()
@@ -125,5 +140,8 @@ while True:
         print("Special organs server couldn't process your request")
     
     client_response = process_special_organs_response(special_organs_response, name, method, phone_number)
+    print('Sending a response......\r\n', client_response)
     client_socket.sendall(client_response.encode(ENCODING))
     client_socket.close()
+    logger.info('Client has been served')
+    print('Connection has been successfully closed!\n' + '-' * 50 + '\r\n')
