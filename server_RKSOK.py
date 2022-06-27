@@ -7,7 +7,7 @@ from log_settings import logger_config
 
 
 logging.config.dictConfig(logger_config)
-logger = logging.getLogger('rksok_logger')
+logger = logging.getLogger('main')
 
 
 SERVER_ADDRESS = ('localhost', 8000)
