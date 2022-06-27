@@ -1,4 +1,4 @@
-import socket
+import asyncio
 import json
 
 import logging
@@ -17,17 +17,19 @@ METHODS = ['WRITE', 'GET', 'DELETE']
 PROTOCOL_RKSOK = 'RKSOK/1.0'
 
 
-class MessageParsingError(Exception):
+class ConnectionError(Exception):
+    pass
+
+class  MessageParsingError(Exception):
     pass
 
 
-def get_message(connection):
+async def get_message(reader):
     message = ''
     while True:
-        chunk = connection.recv(128)
+        chunk = await reader.read(128)
         if not chunk:
-            connection.close()
-            return None
+            raise ConnectionError
         message += chunk.decode(ENCODING)
         if message.endswith('\r\n\r\n'):
             break
@@ -47,19 +49,11 @@ def get_data_from_request(request_message):
     else: raise MessageParsingError
 
 
-def connect_special_organs(message):
-    special_organs_socket = socket.create_connection(SPECIAL_ORGANS_SERVER_ADDRESS)
-    #request = "AMОЖНА? PKCOK/1.0\r\n" + message
-
-    if method == 'WRITE':
-        request = "АМОЖНА? РКСОК/1.0\r\nЗОПИШИ Иван Хмурый РКСОК/1.0\r\n89012345678\r\n\r\n"
-    elif method == 'GET':
-        request = "АМОЖНА? РКСОК/1.0\r\nОТДОВАЙ Иван Хмурый РКСОК/1.0\r\n89012345678\r\n\r\n"
-    else:
-        request = "АМОЖНА? РКСОК/1.0\r\nУДОЛИ Иван Хмурый РКСОК/1.0\r\n89012345678\r\n\r\n"
-
-    special_organs_socket.sendall(request.encode(ENCODING))
-    response = get_message(special_organs_socket)
+async def connect_special_organs(message):
+    reader, writer = await asyncio.open_connection(*SPECIAL_ORGANS_SERVER_ADDRESS)
+    writer.write(message.encode(ENCODING))
+    response = await get_message(reader)
+    writer.close()
     return response
 
 
@@ -94,51 +88,67 @@ def process_special_organs_response(message, name, method, phone):
     return answer + '\r\n\r\n'
 
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.bind(SERVER_ADDRESS)
-server.listen()
+async def handle_connection(reader, writer):
+    addr = writer.get_extra_info('peername')
+    logger_name = 'main.ip_{}_port_{}'.format(*addr)
+    logger = logging.getLogger(logger_name)
+    logger.info('Connection accepted')
 
-while True:
-    logger.info('Waiting for connection')
-
-    client_socket, addr = server.accept()
-    logger.debug(f'Connected to: {addr}')
-    client_socket.settimeout(30.0)
-    
+    logger.debug('Trying to receive a message from the client')
+    try: 
+        client_message = await asyncio.wait_for(get_message(reader), timeout=60)
+        logger.debug('Message received:\n{!r}'.format(client_message))
+    except (asyncio.TimeoutError, ConnectionError) as ex:
+        logger.exception(ex)
+        logger.debug('Closing the connection')
+        writer.close()
+        await writer.wait_closed()
+        return
+        
+    logger.debug('Trying to parse the request')
     try:
-        logger.debug('Trying to receive a request')
-        client_message = get_message(client_socket)
-        if not client_message:
-            logger.info('User disconnected')
-            continue
-        logger.info(f'Message successfully received\nMessage: {client_message}')
-    except TimeoutError:
-        logger.exception('Timeout error occured')
-        client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
-        client_socket.close()
-        continue
-    
-
-    try:
-        logger.debug('Trying to parse request')
         method, protocol, name, phone_number = get_data_from_request(client_message)
-        logger.info(f'Request is correct.........\nGot the data.\nname: {name}\nphone number: {phone_number}\nmethod, protocol: {method, protocol}')
+        logger.debug('Request is correct.\r\nGot the data.\r\nname: {!r}\r\nphone number: {!r}\r\n\
+method, protocol: {!r}, {!r}'.format(name, phone_number, method, protocol))
     except MessageParsingError:
-        logger.exception('Could not parse request')
-        client_socket.sendall("Wrong request. Try again\n".encode(ENCODING))
-        client_socket.close()
-        continue
+        logger.exception('Could not parse the request')
+        writer.write('Wrong request, try again'.encode(ENCODING))
+        await writer.drain()
+        logger.debug('Closing the connection')
+        writer.close()
+        await writer.wait_closed()
+        return
 
-    try:
-        logger.debug('Connecting to the special organs server')
-        special_organs_response = connect_special_organs(client_message)
-        logger.debug(f"Special organs response is: {special_organs_response}")
-    except TimeoutError:
-        logger.exception("Special organs server couldn't process your request")
-    
+    message_to_check = 'АМОЖНА? РКСОК/1.0\r\n' + client_message
+    logger.debug('Connecting to the special organs server, message is:\r\n{!r}'.format(message_to_check))
+    try: 
+        special_organs_response = await connect_special_organs(message_to_check)
+        logger.debug('special organs responce is:\n{!r}'.format(special_organs_response))
+    except ConnectionError:
+        logger.exception('Failed to connect special organs server')
+        writer.write('Sorry, cannot process your request. Try again later'.encode(ENCODING))
+        await writer.drain()
+        logger.debug('Closing the connection')
+        writer.close()
+        await writer.wait_closed()
+        return
+
     client_response = process_special_organs_response(special_organs_response, name, method, phone_number)
-    logger.debug(f'Sending a response......\r\n{client_response}')
-    client_socket.sendall(client_response.encode(ENCODING))
-    client_socket.close()
-    logger.info('Connection has been successfully closed!\n' + '-' * 100 + '\r\n')
+    logger.debug('Sending the response to the client, response is:\r\n{!r}'.format(client_response))
+    writer.write(client_response.encode(ENCODING))
+    await writer.drain()
+    logger.info('Closing the connection')
+    writer.close()
+    await writer.wait_closed()
+    return
+
+
+async def main():
+    server = await asyncio.start_server(handle_connection, *SERVER_ADDRESS)
+    logger.debug('Starting up on {} port {}'.format(*SERVER_ADDRESS))
+
+    async with server:
+        await server.serve_forever()
+
+
+asyncio.run(main())
