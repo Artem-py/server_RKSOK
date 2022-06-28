@@ -10,7 +10,7 @@ logging.config.dictConfig(logger_config)
 logger = logging.getLogger('main')
 
 
-SERVER_ADDRESS = ('localhost', 8000)
+SERVER_ADDRESS = ('193.187.96.198', 8000)
 SPECIAL_ORGANS_SERVER_ADDRESS = ('vragi-vezde.to.digital', 51624)
 ENCODING = 'UTF-8'
 METHODS = ['ОТДОВАЙ', 'ЗОПИШИ', 'УДОЛИ']
@@ -73,7 +73,7 @@ def process_special_organs_response(message, name, method, phone):
     if permission == 'МОЖНА':
         if method == 'ЗОПИШИ':
             phonebook_DB[name] = phone
-            answer = positive_template + '\r\n'
+            answer = positive_template 
         elif method == 'ОТДОВАЙ':
             answer = positive_template + '\r\n' + phonebook_DB[name]  if name in phonebook_DB else no_such_name_template 
         elif method == 'УДОЛИ':
