@@ -71,17 +71,18 @@ def process_special_organs_response(message, name, method, phone):
         phonebook_DB = json.load(f)
 
     if permission == 'МОЖНА':
-        if method == 'WRITE':
+        if method == 'ЗОПИШИ':
             phonebook_DB[name] = phone
-            answer = positive_template + '\r\n' + phone
-        elif method == 'GET':
+            answer = positive_template + '\r\n'
+        elif method == 'ОТДОВАЙ':
             answer = positive_template + '\r\n' + phonebook_DB[name]  if name in phonebook_DB else no_such_name_template 
-        elif method == 'DELETE':
+        elif method == 'УДОЛИ':
             answer = positive_template if name in phonebook_DB else no_such_name_template
-            del phonebook_DB[name]
+            if name in phonebook_DB:
+                del phonebook_DB[name]
     
     elif permission == 'НИЛЬЗЯ':
-        answer = negative_template + comment
+        answer = negative_template + '\r\n' + comment
     else:
         answer = other_template
 
