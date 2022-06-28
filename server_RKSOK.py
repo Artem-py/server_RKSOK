@@ -13,8 +13,8 @@ logger = logging.getLogger('main')
 SERVER_ADDRESS = ('localhost', 8000)
 SPECIAL_ORGANS_SERVER_ADDRESS = ('vragi-vezde.to.digital', 51624)
 ENCODING = 'UTF-8'
-METHODS = ['WRITE', 'GET', 'DELETE']
-PROTOCOL_RKSOK = 'RKSOK/1.0'
+METHODS = ['ОТДОВАЙ', 'ЗОПИШИ', 'УДОЛИ']
+PROTOCOL_RKSOK = 'РКСОК/1.0'
 
 
 class ConnectionError(Exception):
@@ -65,6 +65,7 @@ def process_special_organs_response(message, name, method, phone):
     positive_template = 'НОРМАЛДЫКС РКСОК/1.0'
     no_such_name_template = 'НИНАШОЛ РКСОК/1.0'
     negative_template = 'НИЛЬЗЯ РКСОК/1.0'
+    other_template = 'НИПОНЯЛ РКСОК/1.0'
 
     with open('phonebook_DB.json', 'r') as f:
         phonebook_DB = json.load(f)
@@ -81,6 +82,8 @@ def process_special_organs_response(message, name, method, phone):
     
     elif permission == 'НИЛЬЗЯ':
         answer = negative_template + comment
+    else:
+        answer = other_template
 
     with open('phonebook_DB.json', 'w') as f:    
         json.dump(phonebook_DB, f)
@@ -112,7 +115,7 @@ async def handle_connection(reader, writer):
 method, protocol: {!r}, {!r}'.format(name, phone_number, method, protocol))
     except MessageParsingError:
         logger.exception('Could not parse the request')
-        writer.write('Wrong request, try again'.encode(ENCODING))
+        writer.write('НИПОНЯЛ РКСОК/1.0\r\n\r\n'.encode(ENCODING))
         await writer.drain()
         logger.debug('Closing the connection')
         writer.close()
