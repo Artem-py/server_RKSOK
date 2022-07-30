@@ -45,7 +45,7 @@ def get_data_from_phonebook(request: Request) -> str:
             response = ResponseTemplates.POSITIVE
             del phonebook_DB[request.name]
         else:
-             ResponseTemplates.NO_SUCH_NAME
+             response = ResponseTemplates.NO_SUCH_NAME
 
     with open('phonebook_DB.json', 'w') as f:    
         json.dump(phonebook_DB, f)
