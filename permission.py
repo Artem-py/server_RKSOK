@@ -17,6 +17,7 @@ SPECIAL_ORGANS_SERVER_ADDRESS = ('vragi-vezde.to.digital', 51624)
 class Permission:
     permit: str
     comment: str
+    full_text: str
 
 
 async def get_permission(request: Request) -> Permission:
@@ -26,7 +27,7 @@ async def get_permission(request: Request) -> Permission:
     """
     special_organs_response = await connect_special_organs(Request.full_text)
     permit, comment = process_special_organs_response(special_organs_response)
-    return Permission(permit=permit, comment=comment)
+    return Permission(permit=permit, comment=comment, full_text=special_organs_response)
 
 
 async def connect_special_organs(message: str) -> str:

@@ -42,7 +42,7 @@ async def get_message(reader: asyncio.StreamReader) -> str:
         while True:
             chunk = await reader.read(128)
             if not chunk:
-                raise DisconnectionError
+                raise DisconnectionError('Cliens has disconnected')
             message += chunk.decode(ENCODING)
             if message.endswith('\r\n\r\n'):
                 break
@@ -73,4 +73,3 @@ def is_request_correct(method: str, name: str, protocol: str) -> bool:
     if method not in METHODS or len(name) > 30 or protocol != PROTOCOL_RKSOK:
         raise WrongRequestError('Could not parse the request')
     return True
-    
