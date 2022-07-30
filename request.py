@@ -42,7 +42,7 @@ async def get_message(reader: asyncio.StreamReader) -> str:
         while True:
             chunk = await reader.read(128)
             if not chunk:
-                raise DisconnectionError('Cliens has disconnected')
+                raise DisconnectionError('Client has closed the connection')
             message += chunk.decode(ENCODING)
             if message.endswith('\r\n\r\n'):
                 break
