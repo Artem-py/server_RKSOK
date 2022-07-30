@@ -48,7 +48,7 @@ async def get_message(reader: asyncio.StreamReader) -> str:
                 break
         return message
     except (DisconnectionError, asyncio.TimeoutError) as e:
-        raise ConnectionError
+        raise ConnectionError('Error on the client side')
 
 
 def get_data_from_request(request: str) -> tuple:

@@ -25,7 +25,7 @@ async def get_permission(request: Request) -> Permission:
     as Permission object
     
     """
-    special_organs_response = await connect_special_organs(Request.full_text)
+    special_organs_response = await connect_special_organs(request.full_text)
     permit, comment = process_special_organs_response(special_organs_response)
     return Permission(permit=permit, comment=comment, full_text=special_organs_response)
 
