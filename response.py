@@ -17,7 +17,7 @@ class ResponseTemplates:
 def form_response(request: Request, permission: Permission) -> str:
     if permission.permit == 'МОЖНА':
         response = get_data_from_phonebook(request)
-    elif permission == 'НИЛЬЗЯ':
+    elif permission.permit == 'НИЛЬЗЯ':
         response = ResponseTemplates.NEGATIVE + '\r\n' + permission.comment
     else:
         response = ResponseTemplates.DID_NOT_UNDERSTAND

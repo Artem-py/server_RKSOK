@@ -39,7 +39,8 @@ async def handle_connection(reader: asyncio.StreamReader, writer: asyncio.Stream
         logger.debug('Connecting Special Organs Server')
         special_organs_response = await get_permission(client_request)
         logger.debug('Special Organs response is:\r\n{!r}'.format(special_organs_response.full_text))
-        logger.debug('method is: {}\r\npermission is: {}'.format(client_request.method, special_organs_response.permit))
+        logger.debug('\r\nmethod is: {}\r\npermission is: {}\r\ncomment is {}'.format(client_request.method, 
+        special_organs_response.permit, special_organs_response.comment))
         client_response = form_response(client_request, special_organs_response)
     
     except (ConnectionError, SpecialOrgansServerError) as e:
