@@ -3,26 +3,28 @@
 """
 import json
 
-from permission import Permission
 from request import Request
 
 
 class ResponseTemplates:
     POSITIVE = 'НОРМАЛДЫКС РКСОК/1.0'
-    NEGATIVE = 'НИЛЬЗЯ РКСОК/1.0'
     NO_SUCH_NAME = 'НИНАШОЛ РКСОК/1.0'
-    DID_NOT_UNDERSTAND = 'НИПОНЯЛ РКСОК/1.0'
 
 
-def form_response(request: Request, permission: Permission) -> str:
-    if permission.permit == 'МОЖНА':
+def form_response(request: Request, special_organs_response: str) -> str:
+    permission = get_permission(special_organs_response)
+    if permission == 'МОЖНА':
         response = get_data_from_phonebook(request)
-    elif permission.permit == 'НИЛЬЗЯ':
-        response = ResponseTemplates.NEGATIVE + '\r\n' + permission.comment
-    else:
-        response = ResponseTemplates.DID_NOT_UNDERSTAND
+    elif permission == 'НИЛЬЗЯ':
+        response = special_organs_response
 
-    return response + '\r\n\r\n'
+    return response
+
+
+def get_permission(special_organs_response: str) -> str:
+    split_message = special_organs_response.rstrip('\r\n\r\n').split('\r\n')
+    permission = split_message[0].split(' ')[0]
+    return permission
 
 
 def get_data_from_phonebook(request: Request) -> str:
@@ -50,4 +52,4 @@ def get_data_from_phonebook(request: Request) -> str:
     with open('phonebook_DB.json', 'w') as f:    
         json.dump(phonebook_DB, f)
     
-    return response
+    return response + '\r\n\r\n'

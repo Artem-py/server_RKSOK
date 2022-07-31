@@ -13,21 +13,13 @@ ENCODING = 'UTF-8'
 SPECIAL_ORGANS_SERVER_ADDRESS = ('vragi-vezde.to.digital', 51624)
 
 
-@dataclass(slots=True, frozen=True)
-class Permission:
-    permit: str
-    comment: str
-    full_text: str
-
-
-async def get_permission(request: Request) -> Permission:
+async def get_permission(request: Request) -> str:
     """Sends request to the Special Organs Server and returns its response
     as Permission object
     
     """
     special_organs_response = await connect_special_organs(request.full_text)
-    permit, comment = process_special_organs_response(special_organs_response)
-    return Permission(permit=permit, comment=comment, full_text=special_organs_response)
+    return special_organs_response
 
 
 async def connect_special_organs(message: str) -> str:
@@ -47,14 +39,4 @@ async def connect_special_organs(message: str) -> str:
         raise SpecialOrgansServerError('Failed to connect special organs server')
 
 
-def process_special_organs_response(response: str) -> tuple:
-    """Forms a message to send to client based on the Special Organs Response. 
-    In case the Special Organs Response is positive, goes to the PhoneBook database to get the required information.
-    Returns message in string format
-    
-    """
-    split_message = response.rstrip('\r\n\r\n').split('\r\n')
-    permit = split_message[0].split(' ')[0]
-    comment = '\r\n'.join(split_message[1:])
-    return permit, comment
     
