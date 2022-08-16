@@ -23,9 +23,7 @@ async def handle_connection(reader: asyncio.StreamReader, writer: asyncio.Stream
         3. Turns to the Special Organs Response for permission to process the request
         4. Forms response and sends it back to client
     If something goes wrong during the cycle, handles possible exceptions and forms a response 
-    according to the raised exception.
-    
-    """
+    according to the raised exception."""
     addr = writer.get_extra_info('peername')
     logger_name = 'main.ip_{}_port_{}'.format(*addr)
     logger = logging.getLogger(logger_name)
@@ -61,9 +59,7 @@ async def handle_connection(reader: asyncio.StreamReader, writer: asyncio.Stream
 
 
 async def main():
-    """Starts server to work continuously in an asynchronous mode
-    
-    """
+    """Starts server to work continuously in an asynchronous mode"""
     server = await asyncio.start_server(handle_connection, *SERVER_ADDRESS)
     logger.debug('Starting up on {} port {}'.format(*SERVER_ADDRESS))
 
@@ -71,4 +67,5 @@ async def main():
         await server.serve_forever()
 
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())

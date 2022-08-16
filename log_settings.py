@@ -1,6 +1,4 @@
-"""Logging configuration
-
-"""
+"""Logging configuration"""
 logger_config = {
     'version': 1,
     'disable_existing_loggers': False,

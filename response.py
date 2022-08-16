@@ -1,6 +1,4 @@
-"""Contains functions to form responses
-
-"""
+"""Contains functions to form responses."""
 import json
 
 from request import Request
@@ -28,9 +26,7 @@ def get_permission(special_organs_response: str) -> str:
 
 
 def get_data_from_phonebook(request: Request) -> str:
-    """Works with PhoneBook database file based on the method variable value
-    
-    """
+    """Works with PhoneBook database file based on the method variable value."""
     with open('phonebook_DB.json', 'r') as f:
         phonebook_DB = json.load(f)
 

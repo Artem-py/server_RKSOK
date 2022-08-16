@@ -1,6 +1,4 @@
-"""Contains functions to work with clients' requests
-
-"""
+"""Contains functions to work with clients' requests."""
 import asyncio
 from dataclasses import dataclass
 
@@ -23,9 +21,7 @@ class Request:
 
 async def get_request(reader: asyncio.StreamReader) -> Request:
     """Receives client's request, processes it and, if request is correct,
-    returns Request object
-    
-    """
+    returns Request object."""
     request = await asyncio.wait_for(get_message(reader), timeout=60)
     method, protocol, name, contact_info = get_data_from_request(request)
     return Request(method=method, name=name, protocol=protocol, 
@@ -34,9 +30,8 @@ async def get_request(reader: asyncio.StreamReader) -> Request:
 
 async def get_message(reader: asyncio.StreamReader) -> str:
     """Takes an asyncio reader object, receives client's message and returns it in string format.
-    Raises ConnectionError if an error occurs during reading (such as TimeoutError) or client gets disconnected.
-    
-    """
+    Raises ConnectionError if an error occurs during reading (such as TimeoutError) 
+    or client gets disconnected."""
     try:
         message = ''
         while True:
@@ -47,14 +42,12 @@ async def get_message(reader: asyncio.StreamReader) -> str:
             if message.endswith('\r\n\r\n'):
                 break
         return message
-    except (DisconnectionError, asyncio.TimeoutError) as e:
+    except (DisconnectionError, asyncio.TimeoutError):
         raise ConnectionError('Error on the client side')
 
 
 def get_data_from_request(request: str) -> tuple:
-    """Parses client's message and checks if the message format is correct
-    
-    """
+    """Parses client's message and checks if the message format is correct."""
     split_message = request.rstrip('\r\n\r\n').split('\r\n')
     head_line = split_message[0].split(' ')
     method = head_line[0]
@@ -67,9 +60,8 @@ def get_data_from_request(request: str) -> tuple:
 
 
 def is_request_correct(method: str, name: str, protocol: str) -> bool:
-    """Returns True if response complies with all the protocol syntactic requirements, otherwise raises WrongRequestError exception
-    
-    """
+    """Returns True if response complies with all the protocol syntactic requirements, 
+    otherwise raises WrongRequestError exception."""
     if method not in METHODS or len(name) > 30 or protocol != PROTOCOL_RKSOK:
         raise WrongRequestError('Could not parse the request')
     return True

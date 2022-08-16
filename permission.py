@@ -1,6 +1,4 @@
-"""Contains functions to work with Special Organs server
-
-"""
+"""Contains functions to work with Special Organs server."""
 import asyncio
 from dataclasses import dataclass
 
@@ -16,9 +14,7 @@ CHECK_REQUEST_HEADLINE = 'АМОЖНА? РКСОК/1.0\r\n'
 
 async def get_permission(request: Request) -> str:
     """Sends request to the Special Organs Server and returns its response
-    in string format
-    
-    """
+    in string format."""
     try:
         message_to_check = CHECK_REQUEST_HEADLINE + request.full_text
         reader, writer = await asyncio.open_connection(*SPECIAL_ORGANS_SERVER_ADDRESS)
